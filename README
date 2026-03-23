@@ -1,0 +1,128 @@
+# 🔍 Análise de Crimes por Estado — Brasil 2025
+
+Projeto de análise exploratória de dados sobre segurança pública brasileira, desenvolvido com Python no Google Colab.
+
+## 📌 Objetivo
+
+Identificar o **crime mais recorrente em cada estado brasileiro** com base em dados de ocorrências de 2025, transformando um dataset bruto de 690 mil registros em visualizações claras e interpretáveis.
+
+## 📁 Dataset
+
+- **Arquivo:** `BancoVDE 2025.xlsx`
+- **Registros:** 691.032 linhas × 15 colunas
+- **Cobertura:** 27 estados brasileiros, janeiro a maio de 2025
+- **Fonte:** Origem do dataset ainda a ser confirmada
+
+### Colunas principais
+
+| Coluna | Descrição |
+|---|---|
+| `uf` | Estado (sigla) |
+| `evento` | Tipo de crime ou ocorrência |
+| `total` | Total de ocorrências (crimes patrimoniais/tráfico) |
+| `total_vitima` | Total de vítimas (crimes violentos) |
+| `data_referencia` | Mês de referência |
+
+## 🛠️ Tecnologias
+
+- Python 3
+- Pandas
+- Matplotlib
+- Seaborn
+- Google Colab
+
+## ⚙️ Como executar
+
+1. Faça upload do arquivo `BancoVDE 2025.xlsx` no Google Colab
+2. Execute as células em ordem
+3. O gráfico será gerado ao final
+
+## 🔄 Etapas da análise
+
+### 1. Importação e leitura
+```python
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+df = pd.read_excel('BancoVDE 2025.xlsx')
+```
+
+### 2. Limpeza dos dados
+- Criação de coluna unificada `ocorrencias` combinando `total` e `total_vitima`
+- Remoção de registros sem valores nas colunas essenciais
+- Filtro para manter apenas eventos classificados como crimes
+
+```python
+df['ocorrencias'] = df['total'].fillna(df['total_vitima'])
+df = df.dropna(subset=['uf', 'evento', 'ocorrencias'])
+```
+
+### 3. Filtro de crimes
+Foram mantidos apenas os seguintes tipos de evento:
+
+- Estupro / Estupro de vulnerável
+- Feminicídio / Tentativa de feminicídio
+- Furto de veículo
+- Homicídio doloso
+- Lesão corporal seguida de morte
+- Roubo a instituição financeira / Roubo de carga / Roubo de veículo
+- Roubo seguido de morte (latrocínio)
+- Tráfico de drogas
+- Tentativa de homicídio
+
+### 4. Agregação
+```python
+crimePorEstado = (
+    df.groupby(['uf', 'evento'])['ocorrencias']
+    .mean()
+    .reset_index()
+)
+
+crimeMaisRecorrente = (
+    crimePorEstado
+    .sort_values('ocorrencias', ascending=False)
+    .groupby('uf')
+    .first()
+    .reset_index()
+)
+```
+
+> **Por que `.mean()` e não `.sum()`?**  
+> Crimes violentos têm dezenas de milhares de linhas no dataset (por faixa etária, agente, etc.), enquanto crimes patrimoniais têm poucos registros agregados. Usar a soma distorceria o resultado. A média nivela essa diferença.
+
+## 📊 Resultado
+
+| Estado | Crime líder |
+|---|---|
+| SP | Furto de veículo (7.277 média) |
+| MG | Tráfico de drogas (2.821 média) |
+| RJ | Roubo de veículo (2.103 média) |
+| RS | Tráfico de drogas (1.499 média) |
+| PR | Tráfico de drogas (1.165 média) |
+
+**Tráfico de drogas** lidera em 17 dos 27 estados. SP se destaca com volume de furto de veículo quase 3x maior que o segundo colocado do próprio estado.
+
+## 📈 Visualização
+
+Gráfico de barras gerado com Seaborn, com cada crime representado por uma cor distinta:
+
+```python
+ax = sns.barplot(
+    data=crimeMaisRecorrente,
+    x='uf',
+    y='ocorrencias',
+    hue='evento',
+    palette='tab20'
+)
+```
+
+## 💡 Aprendizados
+
+- A escolha entre `sum()` e `mean()` pode mudar completamente o resultado de uma análise
+- `fillna()` é essencial quando dados relacionados estão espalhados em colunas diferentes
+- Validar o resultado intermediário (`display()`) evita erros silenciosos no gráfico final
+
+## 👤 Autor
+
+Projeto desenvolvido como exercício prático de análise de dados com Python.
